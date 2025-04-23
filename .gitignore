@@ -1,0 +1,35 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+env/
+
+# VSCode settings
+.vscode/
+
+# Python virtualenv metadata
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Test and coverage
+htmlcov/
+.tox/
+.nox/
+.coverage
+coverage.xml
+.cache
+pytest_cache/
+
+# mypy / Pyright
+.mypy_cache/
+.pyright/
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
