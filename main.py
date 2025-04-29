@@ -4,6 +4,7 @@ from db import Base, engine  # Импорт движка и базового к�
 from models import User, Transactions      # Импортируй модель, чтобы SQLAlchemy "увидел" её
 from routers import users
 from routers import transactions
+from routers import categories
 
 
 # Создание таблиц в базе данных
@@ -22,11 +23,18 @@ app = FastAPI(
     {
         "name": "transactions",
         "description": "Операции с транзакциями",
-    }]
+    },
+     {
+        "name": "categories",
+        "description": "Операции с категориями",
+    },
+
+    ]
 )
 
 # Подключаем роутер пользователей
 app.include_router(users.router, prefix="/api")
+app.include_router(categories.router, prefix="/api")
 app.include_router(transactions.router, prefix="/api")  # Добавляем роутер для транзакций
 
 @app.get("/")
