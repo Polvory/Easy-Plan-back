@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional
-from schemas import TransactionResponse  # В зависимости от структуры проекта
+from schemas import TransactionResponse, CategoriesResponse  # В зависимости от структуры проекта
 # Создаём роутер для пользователей
 router = APIRouter(
     prefix="/users",
@@ -25,6 +25,7 @@ class UserResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     transactions: List[TransactionResponse]  # Добавляем список транзакций
+    user_categories: List[CategoriesResponse]
 
 class UserCreate(BaseModel):
     apple_id: str
@@ -55,6 +56,7 @@ async def get_all_users(db: Session = Depends(get_db)):
         # Для каждого пользователя загружаем транзакции
         for user in users:
             db.refresh(user)  # Обновляем объект
+            user.user_categories  # Загружаем транзакции (если используется lazy loading)
             user.transactions  # Загружаем транзакции (если используется lazy loading)
         return users
     except Exception as e:
