@@ -16,6 +16,7 @@ app = FastAPI(
     title="Easy Plan API",
     description="API для Easy Plan",
     version="0.1.0",
+    docs_url="/api/docs",  # Префикс для Swagger UI
     openapi_tags=[{
         "name": "users",
         "description": "Операции с пользователями",
