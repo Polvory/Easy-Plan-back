@@ -60,18 +60,24 @@ class Transactions(Base):
     id = Column(Integer, primary_key=True, index=True)
     sum = Column(Integer)
     currency = Column(SQLAlchemyEnum(CurrencyEnum), nullable=False)
-    type = Column(SQLAlchemyEnum(TransactionsTypeEnum), default=TransactionsTypeEnum.income)
-
+    moded = Column(String(255), nullable=False)
+    repeat_operation = Column(Boolean, default=False)
+    balance = Column(Integer)
    # Связь с категорией
     category_id = Column(Integer, ForeignKey('categories.id', ondelete="CASCADE"), nullable=True)
     category = relationship(
         "Categories",
         back_populates="transactions"  # Должно соответствовать Categories.transactions
     )
+    # Определяем отношение к счетам
+    account_id = Column(Integer, ForeignKey('accounts.id'), nullable=False)  # Внешний ключ
+    account = relationship("Accounts", back_populates="transactions")
 
     # Определяем отношение к пользователю
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)  # Внешний ключ
     user = relationship("User", back_populates="transactions")
+    
+    
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(
         DateTime(timezone=True),
@@ -121,6 +127,14 @@ class Accounts(Base):
     currency = Column(String(255), nullable=False)
     balance = Column(Integer, nullable=False, default=0)
     archive = Column(Boolean, default=False)  # Поле для архивации счета
+    
+    # Определяем отношение к транзакциям
+    transactions = relationship(
+        "Transactions", 
+        back_populates="account", 
+        cascade="all, delete-orphan"
+    )
+    
      # Отношение к пользователю
     user_id = Column(Integer, ForeignKey('users.id', ondelete="SET NULL"), nullable=True)
     user = relationship(

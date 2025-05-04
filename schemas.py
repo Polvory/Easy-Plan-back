@@ -18,17 +18,9 @@ class TransactionsTypeEnum(str, Enum):
     income = 'income'
     expense = 'expense'
 
-class TransactionResponse(BaseModel):
-    id: int
-    sum: int
-    currency: str
-    type: str
-    user_id: int
-    created_at: datetime
-    updated_at: datetime
 
-    class Config:
-        orm_mode = True
+
+
 
 class CategoriesResponse(BaseModel):
     id: int
@@ -91,7 +83,30 @@ class AccountResponse(AccountBase):
 
     class Config:
         orm_mode = True   
+
+
+class CreateTransaction(BaseModel):
+    sum:int = Field(example=1000)  # Было amount, должно быть sum
+    moded: TransactionsTypeEnum = Field(example="income")  # ← теперь тип строго соответствует   
+    repeat_operation: Optional[bool] = Field(default=False)  # Добавляем повторяющуюся операцию
+    category_id: Optional[int] = Field(example=1)  # Добавляем ID категории
+    account_id: Optional[int] = Field(example=1)  # Добавляем ID счета
+    class Config:
+        orm_mode = True
     
+class TransactionResponse(BaseModel):
+    id: int
+    sum: int
+    balance: int
+    currency: str
+    moded: str
+    category: Optional[CategoriesResponse]
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        orm_mode = True
+
 class TransactionsCategoriesEnum(str, Enum):
     # Поступления (receipts)
     SALARY = "Зарплата"
