@@ -86,7 +86,7 @@ def init_user(apple_id: str, db: Session = Depends(get_db)):
                  "role": existing_user.role,
                  "language": existing_user.language,
             }
-        logger.info(f"Создан новый пользователь: {payload}")
+        logger.info(f"Возврщаем пользователя: {payload}")
         token = login(payload)
         return {
             "new_user": False,
