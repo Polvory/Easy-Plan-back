@@ -2,7 +2,7 @@ from fastapi import FastAPI
 import db
 from db import Base, engine
 from models import User, Transactions
-from routers import users, transactions, categories
+from routers import users, transactions, categories,accounts
 from auth import auth
 from fastapi.openapi.utils import get_openapi
 from fastapi.middleware.cors import CORSMiddleware
@@ -46,6 +46,7 @@ app = FastAPI(
         {"name": "users", "description": "Операции с пользователями"},
         {"name": "transactions", "description": "Операции с транзакциями"},
         {"name": "categories", "description": "Операции с категориями"},
+        {"name": "accounts", "description": "Операции с аккаунтами"},
     ]
 )
 
@@ -67,6 +68,8 @@ app.include_router(auth.router, prefix="/api")
 app.include_router(users.router, prefix="/api")
 app.include_router(categories.router, prefix="/api")
 app.include_router(transactions.router, prefix="/api")
+app.include_router(accounts.router, prefix="/api")
+
 
 print("🚀 Приложение запущено")
 

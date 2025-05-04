@@ -4,18 +4,8 @@ from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship
 from db import Base
 from enum import Enum
-from schemas import TransactionsCategoriesEnum
-# Определяем перечисление допустимых валют
-class CurrencyEnum(str, Enum):
-    RUB = "RUB"  # Российский рубль
-    KZT = "KZT"  # Казахстанский тенге
-    CNY = "CNY"  # Китайский юань
-    CZK = "CZK"  # Чешская крона
-    USD = "USD"  # Доллар США
+from schemas import CurrencyEnum, TransactionsTypeEnum
 
-class TransactionsTypeEnum(str, Enum):
-    income = 'income'
-    expense = 'expense'
 
 class CategoriTypeEnum(str, Enum):
     admin = 'admin'
@@ -135,7 +125,7 @@ class Accounts(Base):
     user_id = Column(Integer, ForeignKey('users.id', ondelete="SET NULL"), nullable=True)
     user = relationship(
         "User",
-        back_populates="user_categories",  # Изменено с "categories" для ясности
+        back_populates="user_accounts",  # Изменено с "categories" для ясности
         lazy="joined"
     )
     

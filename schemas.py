@@ -5,6 +5,15 @@ from datetime import datetime
 from typing import List, Optional
 
 
+
+# Определяем перечисление допустимых валют
+class CurrencyEnum(str, Enum):
+    RUB = "RUB"  # Российский рубль
+    KZT = "KZT"  # Казахстанский тенге
+    CNY = "CNY"  # Китайский юань
+    CZK = "CZK"  # Чешская крона
+    USD = "USD"  # Доллар США
+    
 class TransactionsTypeEnum(str, Enum):
     income = 'income'
     expense = 'expense'
@@ -55,8 +64,33 @@ class UpdateCategoryRequest(BaseModel):
     class Config:
         orm_mode = True
     
+    
+class AccountBase(BaseModel):
+    name: str
+    currency: str
+    balance: int
+    archive: bool = False
 
+class AccountCreate(AccountBase):
+    name: str = Field(example="Сбер")
+    currency: CurrencyEnum = Field(example="USD")
+    balance: int = Field(example=300000)
+    archive: bool = False
 
+class AccountUpdate(AccountBase):
+    name: Optional[str]= Field(example="Тинек")
+    currency: CurrencyEnum = Field(example="USD")
+    balance: int = Field(example=3000000)
+    # archive: bool = False
+
+class AccountResponse(AccountBase):
+    id: int
+    user_id: int
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        orm_mode = True   
     
 class TransactionsCategoriesEnum(str, Enum):
     # Поступления (receipts)
