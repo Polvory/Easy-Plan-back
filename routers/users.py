@@ -1,15 +1,16 @@
-from fastapi import APIRouter, HTTPException, status, Depends,Request
+from fastapi import APIRouter, HTTPException, status, Depends, Query
 from typing import List
-from models import User
+from models import Transactions, User, Accounts
 from db import SessionLocal
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
-from datetime import datetime
+from datetime import date, timedelta
 from typing import Optional
-from schemas import TransactionResponse, CategoriesResponse, UserResponse, UserCreate  # В зависимости от структуры проекта
+from schemas import TransactionResponse, CategoriesResponse, UserFinance, UserResponse, UserCreate  # В зависимости от структуры проекта
 from auth.auth import login, guard_role, TokenPayload
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-
+from sqlalchemy.orm import contains_eager, joinedload
+from sqlalchemy import and_
 # from guard.guard import get_current_user, TokenPayload
 import logging
 # Настройка логгирования
@@ -70,6 +71,68 @@ async def get_all_users(
         )
 
 
+@router.get(
+    '/finance',
+    status_code=status.HTTP_200_OK,
+    summary="Получаем финансы пользователя",
+) 
+def get_finance(
+    account_id:int = Query(None, description="ID счета" , example=1),
+    current_user: TokenPayload = Depends(guard_role(["user", "admin"])),
+    db: Session = Depends(get_db)
+):
+    
+    if not account_id:
+        raise HTTPException(status_code=400, detail="account_id не указан")
+    # Текущая дата
+    today = date.today()
+    # Начало месяца
+    start_of_month = date(today.year, today.month, 1)
+    # Начало следующего месяца
+    if today.month == 12:
+        next_month_start = date(today.year + 1, 1, 1)
+    else:
+        next_month_start = date(today.year, today.month + 1, 1)
+
+    # Конец месяца = день перед началом следующего
+    end_of_month = next_month_start - timedelta(days=1)
+
+    print("Начало месяца:", start_of_month)
+    print("Конец месяца:", end_of_month)
+    
+    user_with_transactions = (
+        db.query(User)
+        .options(joinedload(User.transactions))
+        .filter(User.id == current_user.user_id,
+            Transactions.created_at >= start_of_month,
+            Transactions.created_at < next_month_start,
+            )  
+        .first()
+        )
+    
+    
+    account = db.query(Accounts).filter(Accounts.id == account_id).first()
+
+
+    # Фильтрация транзакций по account_id
+    filtered_by_account = [
+        t for t in user_with_transactions.transactions
+        if t.account_id == account_id  # Фильтруем по account_id
+    ]
+    for t in filtered_by_account:
+        print(f"ID: {t.id}, Сумма: {t.sum}, Тип: {t.moded}, Дата: {t.created_at}, ID счета: {t.account_id}, ID категории: {t.account_id}")
+    
+    if not user_with_transactions:
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
+
+    income_sum = sum(t.sum for t in filtered_by_account if t.moded == 'income')
+    expense_sum = sum(t.sum for t in filtered_by_account if t.moded == 'expense')
+
+    return {
+        "balance": account.balance,
+        "income": income_sum,
+        "expense": expense_sum
+    }
 
 
 

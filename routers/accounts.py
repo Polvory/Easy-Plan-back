@@ -39,7 +39,10 @@ def get_db():
             status_code=status.HTTP_200_OK)
 def get_accounts(
     current_user: TokenPayload = Depends(guard_role(["admin", "user"])),
-    db: Session = Depends(get_db)):
+    db: Session = Depends(get_db),
+    archive:bool =  Query( description="Архив", example=False),
+    
+    ):
     try:
         logger.info(f"Получение аккаунтов для user_id: {current_user}")
         user_id = current_user.user_id
@@ -48,6 +51,9 @@ def get_accounts(
             # Если указан user_id
             accounts = accounts.filter(Accounts.user_id == user_id)
         # .filter(Accounts.user_id == user_id).all()
+        # if date_from:
+            accounts = accounts.filter(Accounts.archive == archive)
+        
         if not accounts:
             raise HTTPException(status_code=404, detail="No accounts found")
         return accounts

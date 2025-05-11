@@ -160,6 +160,10 @@ class UserCreate(BaseModel):
     premium: Optional[bool] = False
     email: Optional[str] = None
 
+class UserFinance(BaseModel):
+    id: int    
+    transactions: List[TransactionResponse]  # Добавляем список транзакций
+
 class Token(BaseModel):
     access_token: str
     refresh_token: str
