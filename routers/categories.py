@@ -9,7 +9,7 @@ from datetime import datetime
 from typing import Optional
 from schemas import CategoriesResponse, CreateCategori, UpdateCategoryRequest
 from fastapi.responses import JSONResponse
-from auth.auth import login, guard_role, TokenPayload
+from auth.auth import  guard_role, TokenPayload
 # from guard.guard import get_current_user, TokenPayload
 import logging
 # Настройка логгирования
@@ -32,6 +32,9 @@ def get_db():
     finally:
         db.close()
 
+
+
+
 @router.get("/all", 
             summary="Получить категории (user/admin)",
             response_model=List[CategoriesResponse],  # Используем новую модель
@@ -45,7 +48,12 @@ async def get_all_categories(
         ,
         example=True
     ),
-    db: Session = Depends(get_db)
+    name_filter: str = Query(
+        None,
+        description="Если задано, то фильтрует категории по имени."
+    ),
+    db: Session = Depends(get_db),
+    
 ):
     try:
         logger.info(f"Получение категорий для user_id: {current_user}")
@@ -63,6 +71,10 @@ async def get_all_categories(
                 )
             else:
                 query = query.filter(Categories.user_id == user_id)
+                
+        if name_filter:
+            query = query.filter(Categories.name.ilike(f"%{name_filter}%"))  # Фильтрация по имени
+            
         categories = query.options(
             load_only(
                 Categories.id,

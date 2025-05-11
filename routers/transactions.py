@@ -119,7 +119,9 @@ async def get_all_transactions(
     date_to: Optional[date] = Query(None, description="Конечная дата фильтрации (в формате YYYY-MM-DD)", example="2025-05-30"),
     current_user: TokenPayload = Depends(guard_role(["admin", "user"])),
     offset: int = Query(0, ge=0, description="Смещение (количество записей для пропуска)"),
-    order_by: str = Query("desc", description="Порядок сортировки по дате (asc/desc)")
+    order_by: str = Query("desc", description="Порядок сортировки по дате (asc/desc)"),
+    moded: TransactionsTypeEnum = Query(None, description="Тип операции income/expense", example="income"),
+    account_id: int = Query(None, description="Тип операции income/expense", example=1),
 ):
     """
     Получает список транзакций с возможностью фильтрации и пагинации.
@@ -130,6 +132,8 @@ async def get_all_transactions(
     - order_by: порядок сортировки ('asc' или 'desc')
     - date_from: фильтрация по дате (начало периода)
     - date_to: фильтрация по дате (конец периода)
+    - moded: тип операции income/expense
+    - account_id: id счета
     """
     logger.info(f"Получает список транзакций user_id: {current_user.user_id}")
     # Проверяем существование пользователя
@@ -147,7 +151,10 @@ async def get_all_transactions(
         query = query.filter(Transactions.created_at >= date_from)
     if date_to:
         query = query.filter(Transactions.created_at <= date_to)     
-       
+    if moded:
+        query = query.filter(Transactions.moded == moded)
+    if account_id:
+        query = query.filter(Transactions.account_id == account_id)
     if order_by == "asc":
         query = query.order_by(Transactions.created_at.asc())
     else:
