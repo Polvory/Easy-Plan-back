@@ -9,6 +9,8 @@ from sqlalchemy.orm import Session
 from typing import Optional, Dict, Any, List
 from models import CategoriTypeEnum,  LanguageTypeEnum # Импортируйте вашу модель пользователя
 import logging
+
+from schemas import RefreshTokenRequest
 # Настройка логгирования
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -48,11 +50,11 @@ def create_access_token(data: TokenPayload) -> str:
         logger.info(data)
         expires = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         payload = {
-                "user_id": data["user_id"],
-                "role": data["role"],  # ❌ <Enum>
-                "language": data["language"],  # ❌ <Enum>
-                "exp": expires
-            }
+            "user_id": data.user_id,
+            "role": data.role.value,
+            "language": data.language.value,
+            "exp": expires
+        }
         return jwt.encode(
             payload, 
             SECRET_KEY, 
@@ -67,11 +69,11 @@ def create_refresh_token(data: TokenPayload) -> str:
         logger.info(data)
         expires = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
         payload = {
-                    "user_id": data["user_id"],
-                    "role": data["role"],  # ❌ <Enum>
-                    "language": data["language"],  # ❌ <Enum>
-                    "exp": expires
-                }
+            "user_id": data.user_id,
+            "role": data.role.value,
+            "language": data.language.value,
+            "exp": expires
+        }
         return jwt.encode(payload, REFRESH_SECRET_KEY, algorithm=ALGORITHM)
     except Exception as e:
         logger.error(f"Error creating access token: {e}")
@@ -80,6 +82,8 @@ def create_refresh_token(data: TokenPayload) -> str:
 def login(data: TokenPayload):  # Пример: передаётся user_id, обычно тут логика проверки логина/пароля
     try:
         logger.info(data)
+        
+       
         access_token = create_access_token(data)
         refresh_token = create_refresh_token(data)
         logger.info(f"Access token: {access_token}")
@@ -94,9 +98,9 @@ def login(data: TokenPayload):  # Пример: передаётся user_id, о
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-def guard_role(required_roles: Optional[List[str]] = None,  
-            #    db: Session = Depends(get_db)
-               ):
+
+
+def guard_role(required_roles: Optional[List[str]] = None,  ):
     async def dependency(
         credentials: HTTPAuthorizationCredentials = Depends(security),
         db: Session = Depends(get_db)
@@ -112,6 +116,8 @@ def guard_role(required_roles: Optional[List[str]] = None,
 
             user = TokenPayload(**payload)
              # Получение пользователя из БД
+            
+            
             user_in_db:User = db.query(User).filter(User.id == user.user_id).first()
             if not user_in_db:
                 raise HTTPException(status_code=401, detail="User not found")
@@ -138,3 +144,27 @@ def guard_role(required_roles: Optional[List[str]] = None,
             )
     return dependency
         
+def refresh_token(request: RefreshTokenRequest, db: Session = Depends(get_db)):
+        try:
+            # Раскодируем refresh token
+            payload = jwt.decode(request.refresh_token, REFRESH_SECRET_KEY, algorithms=[ALGORITHM])
+            logger.info(f"Decoded refresh token payload: {payload}")
+
+            # Получаем пользователя из БД
+            user = db.query(User).filter(User.id == payload.get("user_id")).first()
+            if not user:
+                raise HTTPException(status_code=401, detail="User not found")
+
+            # Создаём новую пару токенов
+            token_data = TokenPayload(
+                user_id=user.id,
+                role=user.role,
+                language=user.language
+            )
+            return login(token_data)
+
+        except JWTError as e:
+            raise HTTPException(status_code=401, detail=f"Invalid refresh token: {str(e)}")
+        except Exception as e:
+            logger.error(f"Error refreshing token: {e}")
+            raise HTTPException(status_code=500, detail="Internal server error")

@@ -18,9 +18,13 @@ class TransactionsTypeEnum(str, Enum):
     income = 'income'
     expense = 'expense'
 
+class AccountsUnderEnum(str, Enum):
+    goals = 'goals' # Цели
+    limits = 'limits' # Правила
+    debts = 'debts' # Долги
 
-
-
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
 
 class CategoriesResponse(BaseModel):
     id: int
@@ -84,15 +88,81 @@ class AccountResponse(AccountBase):
     class Config:
         orm_mode = True   
 
+class CreateLimit(BaseModel):
+    balance:int= Field(example=1300)
+    category_id:int= Field(example=1)
+    current_spent:int= Field(example=0)
+    date_update:str = Field(example="2025-06-01")
+    
+    
+class LimitOut(BaseModel):
+    id: int
+    balance: int
+    current_spent:int
+    date_update: str
+    user_id: int
+    category_id: Optional[int] = None
+    created_at: datetime
+    updated_at: datetime
 
+    class Config:
+        from_attributes = True  # заменяет orm_mode в Pydantic v2
+        
+class LimitUpdate(BaseModel):
+    balance:int= Field(example=2300)
+    date_update: str = Field(example="2025-06-01")
+
+
+
+    
+class CreateTarget(BaseModel):
+    name: str
+    balance_target: int
+    balance: Optional[int] = 0
+    date_end: str
+    completed: Optional[bool] = False
+    svg: Optional[str] = None
+
+class TargetUpdate(BaseModel):
+    name: Optional[str] = None
+    balance_target: Optional[int] = None
+    balance: Optional[int] = None
+    date_end: Optional[str] = None
+    completed: Optional[bool] = None
+    svg: Optional[str] = None
+
+class TargetsOut(CreateTarget):
+    id: int
+    name: str
+    balance_target: int
+    balance: Optional[int] = 0
+    date_end: str
+    completed: Optional[bool] = False
+    svg: Optional[str] = None
+     
+        
+        
+        
 class CreateTransaction(BaseModel):
     sum:int = Field(example=1000)  # Было amount, должно быть sum
     moded: TransactionsTypeEnum = Field(example="income")  # ← теперь тип строго соответствует   
     repeat_operation: Optional[bool] = Field(default=False)  # Добавляем повторяющуюся операцию
     category_id: Optional[int] = Field(example=1)  # Добавляем ID категории
     account_id: Optional[int] = Field(example=1)  # Добавляем ID счета
+    debt_id: Optional[int] = Field(None, example=None)  # Полностью необязательное поле
+    target_id: Optional[int] = Field(None, example=None)  # Полностью необязательное поле
+
     class Config:
-        orm_mode = True
+       schema_extra = {
+            "example": {
+                "sum": 1000,
+                "moded": "income",
+                "repeat_operation": False,
+                "category_id": 1,
+                "account_id": 1,
+                "debt_id": None
+            }
+        }
     
 class TransactionResponse(BaseModel):
     id: int
@@ -101,6 +171,8 @@ class TransactionResponse(BaseModel):
     currency: str
     moded: str
     category: Optional[CategoriesResponse]
+    limit: Optional[CreateLimit]
+    target: Optional[TargetsOut]
     created_at: datetime
     updated_at: datetime
 
@@ -169,3 +241,36 @@ class Token(BaseModel):
     refresh_token: str
     token_type: str
     user_data:object
+    
+class DebtsResponse(BaseModel):
+    id:int
+    name:str
+    who_gave:str
+    date_take:str
+    date_end:str
+    comments:str
+    balance:int
+    completed:bool
+    svg:str
+    transactions: List[TransactionResponse]  # Добавляем список транзакций
+    transactions_sum: Optional[float] = None  # Добавляем новое поле
+     
+class DebtsCreate(BaseModel):
+    name:str = Field(example="На еду")
+    who_gave:str = Field(example="Петя Ивнов")
+    date_take:str = Field(example="2025-05-01")
+    date_end:str = Field(example="2025-06-01")
+    comments:str = Field(example="Что-то")
+    balance:int= Field(example=30000)
+    svg:str = Field(example="")
+
+class DebtsUpdate(BaseModel):
+    name: Optional[str] = None
+    who_gave: Optional[str] = None
+    date_take: Optional[str] = None
+    date_end: Optional[str] = None
+    comments: Optional[str] = None
+    balance: Optional[int] = None
+    svg: Optional[str] = None
+    completed: Optional[bool] = None
+    

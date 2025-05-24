@@ -1,13 +1,15 @@
 from fastapi import APIRouter, HTTPException, status, Depends, Query
 from typing import List
+
+from jose import JWTError
 from models import Transactions, User, Accounts
 from db import SessionLocal
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from datetime import date, timedelta
 from typing import Optional
-from schemas import TransactionResponse, CategoriesResponse, UserFinance, UserResponse, UserCreate  # В зависимости от структуры проекта
-from auth.auth import login, guard_role, TokenPayload
+from schemas import RefreshTokenRequest, TransactionResponse, CategoriesResponse, UserFinance, UserResponse, UserCreate  # В зависимости от структуры проекта
+from auth.auth import ALGORITHM, REFRESH_SECRET_KEY, TokenPair, login, guard_role, TokenPayload, refresh_token
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import contains_eager, joinedload
 from sqlalchemy import and_
@@ -144,11 +146,16 @@ def init_user(apple_id: str, db: Session = Depends(get_db)):
     existing_user = db.query(User).filter(User.apple_id == apple_id).first()
     if existing_user:
         print('Возврщаем пользователя')
-        payload:TokenPayload = {
-                 "user_id": existing_user.id,
-                 "role": existing_user.role,
-                 "language": existing_user.language,
-            }
+        # user_actual = TokenPayload(
+        #         user_id=user_in_db.id,
+        #         role=user_in_db.role,
+        #         language=user_in_db.language
+        #     )
+        payload = TokenPayload(
+                 user_id=existing_user.id,
+                 role=existing_user.role,
+                 language=existing_user.language,
+        )
         logger.info(f"Возврщаем пользователя: {payload}")
         token = login(payload)
         return {
@@ -184,8 +191,14 @@ def init_user(apple_id: str, db: Session = Depends(get_db)):
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail=f"Ошибка при создании пользователя: {str(e)}"
                 )
-    
+                
+                
 
+
+    
+@router.post("/refresh", response_model=TokenPair, summary="Обновить токены пользователя")
+def user_refresh_token(request: RefreshTokenRequest, db: Session = Depends(get_db)):
+    return refresh_token(request, db)
 
 
 
