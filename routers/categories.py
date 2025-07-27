@@ -1,6 +1,8 @@
 from fastapi import APIRouter, HTTPException, status, Depends, Query, Response
 from typing import List
-from models import TransactionsTypeEnum, User, Categories  # Добавляем импорт модели Transaction
+
+
+from models import TransactionsTypeEnum,Limits, User, Categories  # Добавляем импорт модели Transaction
 from db import SessionLocal
 from sqlalchemy.orm import Session
 from sqlalchemy.orm import load_only
@@ -33,6 +35,11 @@ def get_db():
         db.close()
 
 
+def get_category_by_user_id(category_id, db):
+    """
+    Получение категории по id
+    """
+    return db.query(Categories).filter(Categories.id == category_id).first()
 
 
 @router.get("/all", 
@@ -236,9 +243,18 @@ async def delete_user_category(
                 detail="Категория не найдена или не принадлежит пользователю"
             )
 
+        # db.delete(category)
+        # db.commit()
+        if category.limit:
+            print(f"Limit ID: {category.limit.id}")
+            limit = db.query(Limits).filter(Limits.id == category.limit.id).first()
+            db.delete(limit)
+            db.commit()     
+        else:
+            print("У категории нет лимита")
+        # return 20/0
         db.delete(category)
         db.commit()
-        
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     except Exception as e:

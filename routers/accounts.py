@@ -71,7 +71,9 @@ def get_accounts(
             status_code=status.HTTP_201_CREATED)
 def create_account(
     account: AccountCreate, 
-    current_user: TokenPayload = Depends(guard_role(["admin", "user"])),
+    current_user: TokenPayload = Depends(guard_role(
+        ["admin", "user"], 
+        limit_key="account_management",)),
     db: Session = Depends(get_db)):
     logger.info(f"Создание аккаунта для user_id: {current_user}")
     new_account = Accounts(
@@ -94,7 +96,11 @@ def create_account(
 def update_account(
     account_id: int, 
     update_data: AccountUpdate,
-    current_user: TokenPayload = Depends(guard_role(["admin", "user"])), 
+    current_user: TokenPayload = Depends(guard_role(
+        ["admin", "user"],
+        
+        
+        )), 
     db: Session = Depends(get_db)):
     """
     Обновляет данные счета.
@@ -122,8 +128,8 @@ def update_account(
             account.currency = update_data.currency
         if update_data.balance is not None:
             account.balance = update_data.balance
-        # if update_data.archive is not None:
-        #     account.archive = update_data.archive
+        if update_data.archive is not None:
+            account.archive = update_data.archive
         
         db.commit()
         db.refresh(account)
